@@ -1,0 +1,113 @@
+version: '3.8'
+
+services:
+  # Main API Gateway (REST, GraphQL, SignalR, SSE)
+  api-gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: fleet-api-gateway
+    ports:
+      - "5001:80"
+      - "5002:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+      - ASPNETCORE_Kestrel__Certificates__Default__Path=/https/aspnetapp.pfx
+      - ASPNETCORE_Kestrel__Certificates__Default__Password=password
+    volumes:
+      - ~/.aspnet/https:/https:ro
+    networks:
+      - fleet-network
+    restart: unless-stopped
+
+  # gRPC Service
+  grpc-service:
+    build:
+      context: .
+      dockerfile: src/backend/DemoApi.GrpcService/Dockerfile
+    container_name: fleet-grpc-service
+    ports:
+      - "5101:80"
+      - "5102:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:80;https://+:443
+    networks:
+      - fleet-network
+    restart: unless-stopped
+    depends_on:
+      - api-gateway
+
+  # MQTT Broker
+  mqtt-broker:
+    build:
+      context: .
+      dockerfile: src/backend/DemoApi.MqttBroker/Dockerfile
+    container_name: fleet-mqtt-broker
+    ports:
+      - "1883:1883"
+      - "8883:8883"
+    networks:
+      - fleet-network
+    restart: unless-stopped
+
+  # Blazor WebAssembly Client (served via nginx)
+  blazor-client:
+    build:
+      context: ./src/clients/DemoApi.BlazorClient
+      dockerfile: Dockerfile
+    container_name: fleet-blazor-client
+    ports:
+      - "5003:80"
+    networks:
+      - fleet-network
+    depends_on:
+      - api-gateway
+
+  # React GraphQL Client (served via nginx)
+  react-client:
+    build:
+      context: ./src/clients/react-graphql-client
+      dockerfile: Dockerfile
+    container_name: fleet-react-client
+    ports:
+      - "3000:80"
+    environment:
+      - VITE_GRAPHQL_URL=https://localhost:5001/graphql
+    networks:
+      - fleet-network
+    depends_on:
+      - api-gateway
+
+  # Vue SSE Client (served via nginx)
+  vue-client:
+    build:
+      context: ./src/clients/vue-sse-client
+      dockerfile: Dockerfile
+    container_name: fleet-vue-client
+    ports:
+      - "5173:80"
+    environment:
+      - VITE_API_URL=https://localhost:5001
+    networks:
+      - fleet-network
+    depends_on:
+      - api-gateway
+
+  # Angular WebRTC Client (served via nginx)
+  angular-client:
+    build:
+      context: ./src/clients/angular-webrtc-client
+      dockerfile: Dockerfile
+    container_name: fleet-angular-client
+    ports:
+      - "4200:80"
+    networks:
+      - fleet-network
+    depends_on:
+      - api-gateway
+
+networks:
+  fleet-network:
+    driver: bridge

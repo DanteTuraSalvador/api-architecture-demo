@@ -1,0 +1,321 @@
+@page "/dashboard"
+@inject TrackingHubService TrackingService
+@inject ApiService ApiService
+@implements IAsyncDisposable
+
+<PageTitle>Fleet Dashboard - Real-time Tracking</PageTitle>
+
+<h1>Fleet Tracking Dashboard</h1>
+<p class="lead">Real-time vehicle tracking using SignalR WebSocket connection</p>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Connection Status</span>
+                <span class="badge @GetConnectionBadgeClass()">@connectionState</span>
+            </div>
+            <div class="card-body">
+                @if (!TrackingService.IsConnected)
+                {
+                    <button class="btn btn-primary" @onclick="ConnectAsync" disabled="@isConnecting">
+                        @if (isConnecting)
+                        {
+                            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                            <span>Connecting...</span>
+                        }
+                        else
+                        {
+                            <span>Connect to Tracking Hub</span>
+                        }
+                    </button>
+                }
+                else
+                {
+                    <button class="btn btn-outline-danger" @onclick="DisconnectAsync">Disconnect</button>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">Statistics</div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-4">
+                        <h3 class="text-primary">@vehicles.Count</h3>
+                        <small>Total Vehicles</small>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-success">@vehicles.Count(v => v.Status == VehicleStatus.Available)</h3>
+                        <small>Available</small>
+                    </div>
+                    <div class="col-4">
+                        <h3 class="text-info">@vehicles.Count(v => v.Status == VehicleStatus.InTransit)</h3>
+                        <small>In Transit</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">Live Vehicle Tracking</div>
+            <div class="card-body">
+                @if (trackingStates.Any())
+                {
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Vehicle</th>
+                                <th>Location</th>
+                                <th>Speed</th>
+                                <th>Last Update</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var state in trackingStates.Values.OrderByDescending(s => s.LastUpdate))
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@state.VehicleNumber</strong>
+                                        <br />
+                                        <small class="text-muted">@state.VehicleId.ToString()[..8]...</small>
+                                    </td>
+                                    <td>@state.Latitude.ToString("F6"), @state.Longitude.ToString("F6")</td>
+                                    <td>@state.Speed.ToString("F1") km/h</td>
+                                    <td>@state.LastUpdate.ToLocalTime().ToString("HH:mm:ss")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        No live tracking data yet. Connect to the tracking hub and wait for vehicle updates.
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between">
+                <span>Recent Alerts</span>
+                <span class="badge bg-danger">@alerts.Count</span>
+            </div>
+            <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                @if (alerts.Any())
+                {
+                    @foreach (var alert in alerts.Take(10))
+                    {
+                        <div class="alert @GetAlertClass(alert.AlertType) py-2 mb-2">
+                            <strong>@alert.AlertType</strong>
+                            <p class="mb-0 small">@alert.Message</p>
+                            <small class="text-muted">@alert.Timestamp.ToLocalTime().ToString("HH:mm:ss")</small>
+                        </div>
+                    }
+                }
+                else
+                {
+                    <p class="text-muted">No alerts received yet.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">Simulate Vehicle Movement</div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Vehicle</label>
+                        <select class="form-select" @bind="selectedVehicleId">
+                            <option value="">Select a vehicle</option>
+                            @foreach (var vehicle in vehicles)
+                            {
+                                <option value="@vehicle.Id">@vehicle.VehicleNumber</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Latitude</label>
+                        <input type="number" class="form-control" @bind="simulateLat" step="0.0001" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Longitude</label>
+                        <input type="number" class="form-control" @bind="simulateLng" step="0.0001" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Speed (km/h)</label>
+                        <input type="number" class="form-control" @bind="simulateSpeed" />
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button class="btn btn-success d-block w-100" @onclick="SendLocationUpdate"
+                                disabled="@(!TrackingService.IsConnected || string.IsNullOrEmpty(selectedVehicleId))">
+                            Send Location Update
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<Vehicle> vehicles = new();
+    private Dictionary<Guid, VehicleTrackingState> trackingStates = new();
+    private List<AlertNotification> alerts = new();
+    private string connectionState = "Disconnected";
+    private bool isConnecting = false;
+
+    private string selectedVehicleId = "";
+    private double simulateLat = 40.7128;
+    private double simulateLng = -74.0060;
+    private double simulateSpeed = 60;
+
+    protected override async Task OnInitializedAsync()
+    {
+        TrackingService.OnLocationUpdated += HandleLocationUpdate;
+        TrackingService.OnVehicleMoved += HandleVehicleMoved;
+        TrackingService.OnAlertReceived += HandleAlert;
+        TrackingService.OnConnectionStateChanged += HandleConnectionStateChange;
+
+        try
+        {
+            vehicles = await ApiService.GetVehiclesAsync();
+            foreach (var vehicle in vehicles)
+            {
+                trackingStates[vehicle.Id] = new VehicleTrackingState
+                {
+                    VehicleId = vehicle.Id,
+                    VehicleNumber = vehicle.VehicleNumber,
+                    Status = vehicle.Status
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error loading vehicles: {ex.Message}");
+        }
+    }
+
+    private async Task ConnectAsync()
+    {
+        isConnecting = true;
+        StateHasChanged();
+
+        try
+        {
+            await TrackingService.StartAsync();
+        }
+        catch (Exception ex)
+        {
+            connectionState = $"Error: {ex.Message}";
+        }
+        finally
+        {
+            isConnecting = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task DisconnectAsync()
+    {
+        await TrackingService.StopAsync();
+    }
+
+    private void HandleLocationUpdate(LocationUpdate update)
+    {
+        if (trackingStates.TryGetValue(update.VehicleId, out var state))
+        {
+            state.Latitude = update.Latitude;
+            state.Longitude = update.Longitude;
+            state.Speed = update.Speed;
+            state.LastUpdate = update.Timestamp;
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleVehicleMoved(LocationUpdate update)
+    {
+        if (!trackingStates.ContainsKey(update.VehicleId))
+        {
+            trackingStates[update.VehicleId] = new VehicleTrackingState
+            {
+                VehicleId = update.VehicleId,
+                VehicleNumber = $"Vehicle-{update.VehicleId.ToString()[..8]}"
+            };
+        }
+
+        var state = trackingStates[update.VehicleId];
+        state.Latitude = update.Latitude;
+        state.Longitude = update.Longitude;
+        state.Speed = update.Speed;
+        state.LastUpdate = update.Timestamp;
+
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleAlert(AlertNotification alert)
+    {
+        alerts.Insert(0, alert);
+        if (alerts.Count > 50)
+        {
+            alerts.RemoveAt(alerts.Count - 1);
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleConnectionStateChange(string state)
+    {
+        connectionState = state;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SendLocationUpdate()
+    {
+        if (Guid.TryParse(selectedVehicleId, out var vehicleId))
+        {
+            await TrackingService.SendLocationUpdateAsync(vehicleId, simulateLat, simulateLng, simulateSpeed);
+
+            // Randomize next position slightly
+            simulateLat += (Random.Shared.NextDouble() - 0.5) * 0.01;
+            simulateLng += (Random.Shared.NextDouble() - 0.5) * 0.01;
+            simulateSpeed = Math.Max(0, simulateSpeed + (Random.Shared.NextDouble() - 0.5) * 10);
+        }
+    }
+
+    private string GetConnectionBadgeClass() => connectionState switch
+    {
+        "Connected" => "bg-success",
+        "Reconnecting..." => "bg-warning",
+        _ => "bg-secondary"
+    };
+
+    private string GetAlertClass(string alertType) => alertType switch
+    {
+        "Speeding" => "alert-danger",
+        "LowFuel" => "alert-warning",
+        "EngineWarning" => "alert-danger",
+        "HarshBraking" => "alert-warning",
+        _ => "alert-info"
+    };
+
+    public async ValueTask DisposeAsync()
+    {
+        TrackingService.OnLocationUpdated -= HandleLocationUpdate;
+        TrackingService.OnVehicleMoved -= HandleVehicleMoved;
+        TrackingService.OnAlertReceived -= HandleAlert;
+        TrackingService.OnConnectionStateChanged -= HandleConnectionStateChange;
+    }
+}

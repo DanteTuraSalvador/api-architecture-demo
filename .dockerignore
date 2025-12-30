@@ -1,0 +1,28 @@
+# Build outputs
+**/bin/
+**/obj/
+**/out/
+**/dist/
+**/node_modules/
+
+# IDE
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Git
+.git/
+.gitignore
+
+# Tests
+**/tests/
+
+# Documentation
+*.md
+!README.md
+
+# Misc
+*.log
+.DS_Store
+Thumbs.db

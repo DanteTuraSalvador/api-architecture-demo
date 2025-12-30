@@ -1,0 +1,100 @@
+@page "/"
+
+<PageTitle>Fleet Management - Blazor SignalR Client</PageTitle>
+
+<div class="container">
+    <div class="text-center my-5">
+        <h1 class="display-4">Fleet Management Dashboard</h1>
+        <p class="lead text-muted">
+            Real-time vehicle tracking using Blazor WebAssembly and SignalR
+        </p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="card h-100 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">SignalR Real-time Tracking</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Connect to the SignalR hub for real-time vehicle location updates,
+                        alerts, and fleet monitoring.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><span class="text-success">&#10003;</span> Live location updates</li>
+                        <li><span class="text-success">&#10003;</span> Real-time alerts</li>
+                        <li><span class="text-success">&#10003;</span> Vehicle simulation</li>
+                        <li><span class="text-success">&#10003;</span> Fleet subscription</li>
+                    </ul>
+                    <a href="/dashboard" class="btn btn-primary">
+                        Go to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card h-100 border-secondary">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">REST API Vehicle Management</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        Full CRUD operations for vehicle management using the REST API
+                        endpoints.
+                    </p>
+                    <ul class="list-unstyled">
+                        <li><span class="text-success">&#10003;</span> List all vehicles</li>
+                        <li><span class="text-success">&#10003;</span> Add new vehicles</li>
+                        <li><span class="text-success">&#10003;</span> Edit vehicle details</li>
+                        <li><span class="text-success">&#10003;</span> Delete vehicles</li>
+                    </ul>
+                    <a href="/vehicles" class="btn btn-secondary">
+                        Manage Vehicles
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card bg-light">
+        <div class="card-body">
+            <h5 class="card-title">About This Demo</h5>
+            <p class="card-text">
+                This Blazor WebAssembly application demonstrates:
+            </p>
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>SignalR Integration</h6>
+                    <p class="small text-muted">
+                        Bidirectional real-time communication with the backend
+                        using SignalR WebSocket connections.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6>REST API Consumption</h6>
+                    <p class="small text-muted">
+                        Standard HTTP-based API calls for CRUD operations
+                        using HttpClient.
+                    </p>
+                </div>
+                <div class="col-md-4">
+                    <h6>Modern Blazor</h6>
+                    <p class="small text-muted">
+                        .NET 9 Blazor WebAssembly with component-based
+                        architecture and dependency injection.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-5 text-muted">
+        <p>
+            <small>
+                Part of the Multi-Protocol API Architecture Demo<br/>
+                REST | GraphQL | gRPC | SignalR | SSE | MQTT | WebRTC
+            </small>
+        </p>
+    </div>
+</div>
