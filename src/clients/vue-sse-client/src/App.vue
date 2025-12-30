@@ -2,7 +2,7 @@
 import AlertStream from './components/AlertStream.vue'
 import AlertTrigger from './components/AlertTrigger.vue'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://localhost:5001'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5181'
 </script>
 
 <template>

@@ -32,7 +32,7 @@ export interface IceCandidateMessage {
 })
 export class SignalingService {
   private hubConnection: HubConnection | null = null;
-  private hubUrl = 'https://localhost:5001/hubs/signaling';
+  private hubUrl = 'http://localhost:5181/hubs/signaling';
 
   // Observables
   private connectedSubject = new BehaviorSubject<boolean>(false);
